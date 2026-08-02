@@ -15,29 +15,45 @@ const CHAT_ID = process.env.CHAT_ID;
 let expenses = [];
 
 function formatMoney(number) {
-    return Number(number).toLocaleString("vi-VN") + "đ";
+    return Number(number).toLocaleString("vi-VN") + " đ";
 }
 
 app.post("/send", async (req, res) => {
 
     const { content, amount } = req.body;
 
+    if (!content || !amount) {
+        return res.json({
+            success: false
+        });
+    }
+
     const now = new Date();
 
     const date = now.toLocaleDateString("vi-VN");
-    const time = now.toLocaleTimeString("vi-VN");
+
+    const time = now.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
 
     expenses.push({
         content,
         amount: Number(amount)
     });
 
-    const message =
-`📅 ${date} ${time}
+    const message = `
+💸 GIAO DỊCH MỚI
 
-💰 ${formatMoney(amount)}
+📝 Nội dung : ${content}
+💰 Số tiền : ${formatMoney(amount)}
 
-📝 ${content}`;
+📅 Ngày : ${date}
+🕒 Giờ : ${time}
+
+━━━━━━━━━━━━━━━━━━━━
+🤖 Telegram Expense Bot
+`;
 
     try {
 
@@ -61,21 +77,19 @@ app.post("/send", async (req, res) => {
 
 bot.onText(/\/help/, async (msg) => {
 
-    await bot.sendMessage(msg.chat.id,
-`📖 LỆNH
-
-/send (qua Web)
-
----------------------
+    await bot.sendMessage(
+        msg.chat.id,
+`📖 HƯỚNG DẪN
 
 /chot
 Chốt cuối ngày
 
 /reset
-Xóa danh sách hôm nay
+Xóa dữ liệu hôm nay
 
 /help
-Hiển thị hướng dẫn`);
+Xem hướng dẫn`
+    );
 
 });
 
@@ -83,8 +97,10 @@ bot.onText(/\/reset/, async (msg) => {
 
     expenses = [];
 
-    await bot.sendMessage(msg.chat.id,
-"🗑 Đã xóa toàn bộ chi tiêu hôm nay.");
+    await bot.sendMessage(
+        msg.chat.id,
+        "🗑 Đã xóa toàn bộ giao dịch hôm nay."
+    );
 
 });
 
@@ -92,40 +108,39 @@ bot.onText(/\/chot/, async (msg) => {
 
     if (expenses.length === 0) {
 
-        return bot.sendMessage(msg.chat.id,
-"📭 Hôm nay chưa có chi tiêu.");
+        return bot.sendMessage(
+            msg.chat.id,
+            "📭 Hôm nay chưa có giao dịch."
+        );
 
     }
 
     let total = 0;
 
-    let text = "📊 CHỐT CUỐI NGÀY\n\n";
+    let report = `📊 CHỐT CHI TIÊU\n\n`;
 
-    expenses.forEach(item => {
+    expenses.forEach((item, index) => {
 
         total += item.amount;
 
-        text += `• ${formatMoney(item.amount)} - ${item.content}\n`;
+        report += `${index + 1}. 💰 ${formatMoney(item.amount)}\n`;
+        report += `📝 ${item.content}\n\n`;
 
     });
 
-    text += `\n--------------------\n`;
-    text += `💰 Tổng chi: ${formatMoney(total)}`;
+    report += `━━━━━━━━━━━━━━━━━━━━\n`;
+    report += `💵 TỔNG CHI: ${formatMoney(total)}`;
 
-    await bot.sendMessage(msg.chat.id, text);
+    await bot.sendMessage(msg.chat.id, report);
 
 });
 
 app.get("/", (req, res) => {
-
     res.sendFile(__dirname + "/public/index.html");
-
 });
 
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-
     console.log(`Server running on ${PORT}`);
-
 });
