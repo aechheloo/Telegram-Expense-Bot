@@ -22,21 +22,14 @@ app.post("/send", async (req, res) => {
 
     const { content, amount } = req.body;
 
-    if (!content || !amount) {
-        return res.json({
-            success: false,
-            message: "Thiếu dữ liệu"
-        });
-    }
-
     const now = new Date();
 
     const date = now.toLocaleDateString("vi-VN");
     const time = now.toLocaleTimeString("vi-VN");
 
     expenses.push({
-        amount: Number(amount),
-        content
+        content,
+        amount: Number(amount)
     });
 
     const message =
@@ -66,56 +59,73 @@ app.post("/send", async (req, res) => {
 
 });
 
-bot.onText(/\/chot/, (msg) => {
+bot.onText(/\/help/, async (msg) => {
+
+    await bot.sendMessage(msg.chat.id,
+`📖 LỆNH
+
+/send (qua Web)
+
+---------------------
+
+/chot
+Chốt cuối ngày
+
+/reset
+Xóa danh sách hôm nay
+
+/help
+Hiển thị hướng dẫn`);
+
+});
+
+bot.onText(/\/reset/, async (msg) => {
+
+    expenses = [];
+
+    await bot.sendMessage(msg.chat.id,
+"🗑 Đã xóa toàn bộ chi tiêu hôm nay.");
+
+});
+
+bot.onText(/\/chot/, async (msg) => {
 
     if (expenses.length === 0) {
-        return bot.sendMessage(msg.chat.id, "Hôm nay chưa có khoản chi nào.");
+
+        return bot.sendMessage(msg.chat.id,
+"📭 Hôm nay chưa có chi tiêu.");
+
     }
 
     let total = 0;
 
-    let text = "📊 CHỐT CHI TIÊU HÔM NAY\n\n";
+    let text = "📊 CHỐT CUỐI NGÀY\n\n";
 
     expenses.forEach(item => {
+
         total += item.amount;
+
         text += `• ${formatMoney(item.amount)} - ${item.content}\n`;
+
     });
 
-    text += `\n💰 Tổng chi: ${formatMoney(total)}`;
+    text += `\n--------------------\n`;
+    text += `💰 Tổng chi: ${formatMoney(total)}`;
 
-    bot.sendMessage(msg.chat.id, text);
-
-});
-
-bot.onText(/\/reset/, (msg) => {
-
-    expenses = [];
-
-    bot.sendMessage(msg.chat.id, "✅ Đã xóa danh sách hôm nay.");
-
-});
-
-bot.onText(/\/help/, (msg) => {
-
-    bot.sendMessage(
-        msg.chat.id,
-`📖 HƯỚNG DẪN
-
-/chot  - Chốt cuối ngày
-
-/reset - Xóa danh sách hôm nay
-
-/help  - Hướng dẫn sử dụng`
-    );
+    await bot.sendMessage(msg.chat.id, text);
 
 });
 
 app.get("/", (req, res) => {
+
     res.sendFile(__dirname + "/public/index.html");
+
 });
 
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
+
     console.log(`Server running on ${PORT}`);
+
 });
