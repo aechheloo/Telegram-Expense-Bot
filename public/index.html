@@ -1,133 +1,82 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Telegram Expense Bot</title>
-
 <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
 
-<div class="phone">
+<div class="app">
 
-<div class="card">
-
-<div class="top">
+<header class="header">
 
 <h1>GHI CHI TIÊU</h1>
 
-<button class="setting">
+<button class="setting">⚙️</button>
 
-⚙️
+</header>
 
-</button>
+<div class="line"></div>
 
-</div>
+<section class="card">
 
-<div class="green-line"></div>
-
-<label>
-
-📝 NỘI DUNG
-
-</label>
+<label>📝 NỘI DUNG</label>
 
 <textarea
 id="content"
 placeholder="Ví dụ: Ăn sáng"></textarea>
 
-<label>
+<label>💰 SỐ TIỀN (VNĐ)</label>
 
-💰 SỐ TIỀN (VNĐ)
-
-</label>
-
-<div class="money-box">
+<div class="money">
 
 <input
-
 id="amount"
-
 type="text"
-
-placeholder="50.000"
-
-autocomplete="off"
-
->
+placeholder="50.000">
 
 <button
-
 class="clear"
-
-onclick="clearMoney()"
-
-type="button"
-
->
+onclick="clearMoney()">
 
 ✕
-
 </button>
 
 </div>
 
 <div class="quick">
 
-<button onclick="setMoney(10000)">
+<button onclick="setMoney(10000)">10.000</button>
 
-10.000
+<button onclick="setMoney(20000)">20.000</button>
 
-</button>
+<button onclick="setMoney(50000)">50.000</button>
 
-<button onclick="setMoney(20000)">
+<button onclick="setMoney(100000)">100.000</button>
 
-20.000
-
-</button>
-
-<button onclick="setMoney(50000)">
-
-50.000
-
-</button>
-
-<button onclick="setMoney(100000)">
-
-100.000
-
-</button>
-
-<button onclick="document.getElementById('amount').focus()">
-
+<button onclick="amount.focus()">
 Khác
-
 </button>
 
 </div>
 
 <button
-
+id="sendBtn"
 class="send"
-
-onclick="sendData()"
-
->
+onclick="sendData()">
 
 🚀 GỬI GIAO DỊCH
 
 </button>
 
-<div class="notice">
+</section>
 
-<div class="icon">
+<section class="safe">
+
+<div class="check">
 
 ✅
 
@@ -135,80 +84,53 @@ onclick="sendData()"
 
 <div>
 
-<h3>
+<h3>Dữ liệu được gửi an toàn đến Telegram Bot</h3>
 
-Dữ liệu được gửi an toàn đến Telegram Bot
-
-</h3>
-
-<p>
-
-Nhấn "GỬI GIAO DỊCH" để lưu và gửi giao dịch.
-
-</p>
+<p>Nhấn "GỬI GIAO DỊCH" để lưu giao dịch.</p>
 
 </div>
 
-</div>
+</section>
 
-</div>
+<nav class="bottom">
 
-<div class="bottom">
-
-<div class="item active">
+<div class="active">
 
 🏠
 
-<span>
-
-Trang chủ
-
-</span>
+<span>Trang chủ</span>
 
 </div>
 
-<div class="item">
+<div>
 
 📊
 
-<span>
-
-Báo cáo
-
-</span>
+<span>Báo cáo</span>
 
 </div>
 
-<div class="item">
+<div>
 
 🕘
 
-<span>
-
-Lịch sử
-
-</span>
+<span>Lịch sử</span>
 
 </div>
 
-<div class="item">
+<div>
 
 ⚙️
 
-<span>
-
-Cài đặt
-
-</span>
+<span>Cài đặt</span>
 
 </div>
 
-</div>
+</nav>
 
 </div>
 
 <script src="app.js"></script>
 
 </body>
-
 </html>
