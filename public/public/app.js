@@ -1,11 +1,12 @@
 const content = document.getElementById("content");
 const amount = document.getElementById("amount");
+const sendBtn = document.getElementById("sendBtn");
 
 amount.addEventListener("input", function () {
 
     let value = this.value.replace(/\D/g, "");
 
-    if (value === "") {
+    if (!value) {
         this.value = "";
         return;
     }
@@ -17,25 +18,25 @@ amount.addEventListener("input", function () {
 function clearMoney() {
 
     amount.value = "";
+    amount.focus();
 
 }
 
-function setMoney(number) {
+function setMoney(value) {
 
-    amount.value = Number(number).toLocaleString("vi-VN");
+    amount.value = Number(value).toLocaleString("vi-VN");
 
 }
 
 async function sendData() {
 
     const noiDung = content.value.trim();
-
     const soTien = amount.value.replace(/\./g, "");
 
     if (noiDung === "") {
 
         alert("Vui lòng nhập nội dung.");
-
+        content.focus();
         return;
 
     }
@@ -43,20 +44,17 @@ async function sendData() {
     if (soTien === "") {
 
         alert("Vui lòng nhập số tiền.");
-
+        amount.focus();
         return;
 
     }
 
-    const btn = document.getElementById("sendBtn");
-
-    btn.disabled = true;
-
-    btn.innerHTML = "⏳ Đang gửi...";
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = "⏳ ĐANG GỬI...";
 
     try {
 
-        const res = await fetch("/send", {
+        const response = await fetch("/send", {
 
             method: "POST",
 
@@ -69,46 +67,43 @@ async function sendData() {
             body: JSON.stringify({
 
                 content: noiDung,
-
                 amount: soTien
 
             })
 
         });
 
-        const data = await res.json();
+        const result = await response.json();
 
-        if (data.success) {
+        if (result.success) {
 
-            btn.innerHTML = "✅ Đã gửi";
+            sendBtn.innerHTML = "✅ ĐÃ GỬI";
 
             content.value = "";
-
             amount.value = "";
 
             setTimeout(() => {
 
-                btn.innerHTML = "🚀 GỬI GIAO DỊCH";
+                sendBtn.innerHTML = "🚀 GỬI GIAO DỊCH";
+                sendBtn.disabled = false;
 
-                btn.disabled = false;
-
-            }, 1500);
+            }, 1200);
 
         } else {
 
-            btn.innerHTML = "❌ Lỗi";
+            alert("Gửi thất bại.");
 
-            btn.disabled = false;
+            sendBtn.innerHTML = "🚀 GỬI GIAO DỊCH";
+            sendBtn.disabled = false;
 
         }
 
     } catch (e) {
 
-        btn.innerHTML = "❌ Lỗi";
+        alert("Không thể kết nối máy chủ.");
 
-        btn.disabled = false;
-
-        alert("Không thể kết nối tới máy chủ.");
+        sendBtn.innerHTML = "🚀 GỬI GIAO DỊCH";
+        sendBtn.disabled = false;
 
     }
 
