@@ -1,36 +1,114 @@
-async function sendData() {
+const content = document.getElementById("content");
+const amount = document.getElementById("amount");
 
-    const content = document.getElementById("content").value;
-    const amount = document.getElementById("amount").value;
+amount.addEventListener("input", function () {
 
-    if (!content || !amount) {
-        alert("Vui lòng nhập đầy đủ.");
+    let value = this.value.replace(/\D/g, "");
+
+    if (value === "") {
+        this.value = "";
         return;
     }
 
-    const res = await fetch("/send", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            content,
-            amount
-        })
-    });
+    this.value = Number(value).toLocaleString("vi-VN");
 
-    const data = await res.json();
+});
 
-    if (data.success) {
+function clearMoney() {
 
-        alert("✅ Đã gửi Telegram");
+    amount.value = "";
 
-        document.getElementById("content").value = "";
-        document.getElementById("amount").value = "";
+}
 
-    } else {
+function setMoney(number) {
 
-        alert("❌ Gửi thất bại");
+    amount.value = Number(number).toLocaleString("vi-VN");
+
+}
+
+async function sendData() {
+
+    const noiDung = content.value.trim();
+
+    const soTien = amount.value.replace(/\./g, "");
+
+    if (noiDung === "") {
+
+        alert("Vui lòng nhập nội dung.");
+
+        return;
+
+    }
+
+    if (soTien === "") {
+
+        alert("Vui lòng nhập số tiền.");
+
+        return;
+
+    }
+
+    const btn = document.getElementById("sendBtn");
+
+    btn.disabled = true;
+
+    btn.innerHTML = "⏳ Đang gửi...";
+
+    try {
+
+        const res = await fetch("/send", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify({
+
+                content: noiDung,
+
+                amount: soTien
+
+            })
+
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+
+            btn.innerHTML = "✅ Đã gửi";
+
+            content.value = "";
+
+            amount.value = "";
+
+            setTimeout(() => {
+
+                btn.innerHTML = "🚀 GỬI GIAO DỊCH";
+
+                btn.disabled = false;
+
+            }, 1500);
+
+        } else {
+
+            btn.innerHTML = "❌ Lỗi";
+
+            btn.disabled = false;
+
+        }
+
+    } catch (e) {
+
+        btn.innerHTML = "❌ Lỗi";
+
+        btn.disabled = false;
+
+        alert("Không thể kết nối tới máy chủ.");
 
     }
 
