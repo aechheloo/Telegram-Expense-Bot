@@ -1,0 +1,57 @@
+const express = require("express");
+const TelegramBot = require("node-telegram-bot-api");
+
+const app = express();
+
+app.use(express.json());
+app.use(express.static("public"));
+
+const TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
+
+const bot = new TelegramBot(TOKEN);
+
+function formatMoney(number) {
+    return Number(number).toLocaleString("vi-VN") + "đ";
+}
+
+app.post("/send", async (req, res) => {
+
+    const { content, amount } = req.body;
+
+    const now = new Date();
+
+    const date = now.toLocaleDateString("vi-VN");
+    const time = now.toLocaleTimeString("vi-VN");
+
+    const message =
+
+`📅 ${date} ${time}
+
+💰 ${formatMoney(amount)}
+
+📝 ${content}`;
+
+    try {
+
+        await bot.sendMessage(CHAT_ID, message);
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.json({
+            success: false
+        });
+
+    }
+
+});
+
+app.listen(process.env.PORT || 8080, () => {
+    console.log("Server running on 8080");
+});
