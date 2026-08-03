@@ -33,9 +33,7 @@ app.use(express.urlencoded({
     extended: true
 }));
 
-app.use(express.static(
-    path.join(__dirname, "public")
-));
+app.use(express.static(path.join(__dirname, "public")));
 
 /* ===========================
    CREATE TABLE
@@ -43,25 +41,33 @@ app.use(express.static(
 
 async function createTable() {
 
-    await pool.query(`
+    try {
 
-        CREATE TABLE IF NOT EXISTS transactions(
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS transactions (
 
-            id SERIAL PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
 
-            content TEXT NOT NULL,
+                content TEXT NOT NULL,
 
-            amount BIGINT NOT NULL,
+                amount BIGINT NOT NULL,
 
-            business_date DATE NOT NULL,
+                business_date DATE NOT NULL,
 
-            created_at TIMESTAMP DEFAULT NOW(),
+                created_at TIMESTAMP DEFAULT NOW(),
 
-            closed BOOLEAN DEFAULT FALSE
+                closed BOOLEAN DEFAULT FALSE
 
-        )
+            )
+        `);
 
-    `);
+        console.log("✅ Database Ready");
+
+    } catch (err) {
+
+        console.log(err);
+
+    }
 
 }
 
@@ -71,27 +77,23 @@ createTable();
    FORMAT MONEY
 =========================== */
 
-function money(number){
+function money(number) {
 
-    return Number(number)
-        .toLocaleString("vi-VN");
+    return Number(number).toLocaleString("vi-VN");
 
 }
 
 /* ===========================
-   DATE
+   TODAY
 =========================== */
 
-function today(){
+function today() {
 
-    const d = new Date();
+    return new Date().toLocaleDateString("en-CA", {
 
-    return d.toLocaleDateString(
-        "en-CA",
-        {
-            timeZone:"Asia/Ho_Chi_Minh"
-        }
-    );
+        timeZone: "Asia/Ho_Chi_Minh"
+
+    });
 
 }
 
@@ -99,51 +101,62 @@ function today(){
    TIME
 =========================== */
 
-function time(){
+function time() {
 
-    return new Date()
-        .toLocaleTimeString(
-            "vi-VN",
-            {
-                hour12:false,
-                timeZone:"Asia/Ho_Chi_Minh"
-            }
-        );
+    return new Date().toLocaleTimeString("vi-VN", {
+
+        hour12: false,
+
+        timeZone: "Asia/Ho_Chi_Minh"
+
+    });
 
 }
 
 /* ===========================
-   SEND TELEGRAM
+   TELEGRAM
 =========================== */
 
-async function telegram(message){
+async function telegram(message) {
 
-    await fetch(
+    try {
 
-        `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+        await fetch(
 
-        {
+            `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
 
-            method:"POST",
+            {
 
-            headers:{
-                "Content-Type":"application/json"
-            },
+                method: "POST",
 
-            body:JSON.stringify({
+                headers: {
 
-                chat_id:CHAT_ID,
+                    "Content-Type": "application/json"
 
-                text:message
+                },
 
-            })
+                body: JSON.stringify({
 
-        }
+                    chat_id: CHAT_ID,
 
-    );
+                    text: message
+
+                })
+
+            }
+
+        );
+
+    }
+
+    catch (err) {
+
+        console.log(err);
+
+    }
 
 }/* ===========================
-   API SEND TRANSACTION
+   SEND TRANSACTION
 =========================== */
 
 app.post("/send", async (req, res) => {
@@ -153,11 +166,14 @@ app.post("/send", async (req, res) => {
         const content = String(req.body.content || "").trim();
         const amount = Number(req.body.amount);
 
-        if (!content || !amount) {
+        if (!content || amount <= 0) {
 
             return res.json({
+
                 success: false,
-                message: "Thiếu dữ liệu"
+
+                message: "Thiếu dữ liệu."
+
             });
 
         }
@@ -166,8 +182,11 @@ app.post("/send", async (req, res) => {
 
             `
             INSERT INTO transactions
-            (content,amount,business_date)
-
+            (
+                content,
+                amount,
+                business_date
+            )
             VALUES($1,$2,$3)
             `,
 
@@ -201,15 +220,15 @@ app.post("/send", async (req, res) => {
 
     }
 
-    catch(error){
+    catch (err) {
 
-        console.log(error);
+        console.log(err);
 
         res.json({
 
-            success:false,
+            success: false,
 
-            error:error.message
+            error: err.message
 
         });
 
@@ -218,183 +237,24 @@ app.post("/send", async (req, res) => {
 });
 
 /* ===========================
-   TODAY
+   TODAY REPORT
 =========================== */
 
-app.get("/api/today", async(req,res)=>{
-
-    try{
-
-        const list = await pool.query(
-
-            `
-            SELECT *
-
-            FROM transactions
-
-            WHERE business_date=$1
-
-            ORDER BY id DESC
-            `,
-
-            [
-
-                today()
-
-            ]
-
-        );
-
-        const total = await pool.query(
-
-            `
-            SELECT
-
-            COALESCE(
-                SUM(amount),
-                0
-            ) total
-
-            FROM transactions
-
-            WHERE business_date=$1
-            `,
-
-            [
-
-                today()
-
-            ]
-
-        );
-
-        res.json({
-
-            success:true,
-
-            total:Number(
-                total.rows[0].total
-            ),
-
-            count:list.rows.length,
-
-            transactions:list.rows
-
-        });
-
-    }
-
-    catch(error){
-
-        res.json({
-
-            success:false,
-
-            error:error.message
-
-        });
-
-    }
-
-}/* ===========================
-   API SEND TRANSACTION
-=========================== */
-
-app.post("/send", async (req, res) => {
+app.get("/api/today", async (req, res) => {
 
     try {
 
-        const content = String(req.body.content || "").trim();
-        const amount = Number(req.body.amount);
-
-        if (!content || !amount) {
-
-            return res.json({
-                success: false,
-                message: "Thiếu dữ liệu"
-            });
-
-        }
-
-        await pool.query(
-
-            `
-            INSERT INTO transactions
-            (content,amount,business_date)
-
-            VALUES($1,$2,$3)
-            `,
-
-            [
-                content,
-                amount,
-                today()
-            ]
-
-        );
-
-        const message =
-
-`💸 GIAO DỊCH MỚI
-
-📅 ${today()}
-
-🕒 ${time()}
-
-💰 ${money(amount)} VNĐ
-
-📝 ${content}`;
-
-        await telegram(message);
-
-        res.json({
-
-            success: true
-
-        });
-
-    }
-
-    catch(error){
-
-        console.log(error);
-
-        res.json({
-
-            success:false,
-
-            error:error.message
-
-        });
-
-    }
-
-});
-
-/* ===========================
-   TODAY
-=========================== */
-
-app.get("/api/today", async(req,res)=>{
-
-    try{
-
         const list = await pool.query(
 
             `
             SELECT *
-
             FROM transactions
-
             WHERE business_date=$1
-
             ORDER BY id DESC
             `,
 
             [
-
                 today()
-
             ]
 
         );
@@ -403,48 +263,40 @@ app.get("/api/today", async(req,res)=>{
 
             `
             SELECT
-
-            COALESCE(
-                SUM(amount),
-                0
-            ) total
-
+            COALESCE(SUM(amount),0) AS total
             FROM transactions
-
             WHERE business_date=$1
             `,
 
             [
-
                 today()
-
             ]
 
         );
 
         res.json({
 
-            success:true,
+            success: true,
 
-            total:Number(
-                total.rows[0].total
-            ),
+            total: Number(total.rows[0].total),
 
-            count:list.rows.length,
+            count: list.rows.length,
 
-            transactions:list.rows
+            transactions: list.rows
 
         });
 
     }
 
-    catch(error){
+    catch (err) {
+
+        console.log(err);
 
         res.json({
 
-            success:false,
+            success: false,
 
-            error:error.message
+            error: err.message
 
         });
 
@@ -475,30 +327,35 @@ app.post("/api/close-day", async (req, res) => {
         if (result.rows.length === 0) {
 
             return res.json({
+
                 success: false,
+
                 message: "Không có giao dịch để chốt."
+
             });
 
         }
 
         let total = 0;
 
-        let report = `✅ CHỐT CUỐI NGÀY\n\n`;
+        let report = `📒 BÁO CÁO CUỐI NGÀY\n\n`;
+
         report += `📅 ${today()}\n\n`;
 
         result.rows.forEach((item, index) => {
 
             total += Number(item.amount);
 
-            report += `${index + 1}. ${item.content}\n`;
-            report += `${money(item.amount)} VNĐ\n\n`;
+            report += `#${index + 1}\n`;
+            report += `📝 ${item.content}\n`;
+            report += `💰 ${money(item.amount)} VNĐ\n\n`;
 
         });
 
-        report += `━━━━━━━━━━━━━━\n`;
-        report += `💰 Tổng tiền: ${money(total)} VNĐ\n`;
+        report += "━━━━━━━━━━━━━━━━━━\n";
         report += `📊 Số giao dịch: ${result.rows.length}\n`;
-        report += `🕒 Chốt lúc: ${time()}`;
+        report += `💵 Tổng tiền: ${money(total)} VNĐ\n`;
+        report += `🕒 ${time()}`;
 
         await telegram(report);
 
@@ -526,21 +383,23 @@ app.post("/api/close-day", async (req, res) => {
 
     }
 
-    catch (error) {
+    catch (err) {
 
-        console.log(error);
+        console.log(err);
 
         res.json({
 
             success: false,
 
-            error: error.message
+            error: err.message
 
         });
 
     }
 
-});/* ===========================
+});
+
+/* ===========================
    HOME
 =========================== */
 
@@ -553,7 +412,7 @@ app.get("/", (req, res) => {
 });
 
 /* ===========================
-   HEALTH CHECK
+   HEALTH
 =========================== */
 
 app.get("/health", async (req, res) => {
@@ -578,23 +437,19 @@ app.get("/health", async (req, res) => {
 
     }
 
-    catch (error) {
+    catch (err) {
 
         res.status(500).json({
 
             success: false,
 
-            database: "Disconnected",
-
-            error: error.message
+            error: err.message
 
         });
 
     }
 
-});
-
-/* ===========================
+});/* ===========================
    404
 =========================== */
 
@@ -611,6 +466,26 @@ app.use((req, res) => {
 });
 
 /* ===========================
+   ERROR HANDLER
+=========================== */
+
+app.use((err, req, res, next) => {
+
+    console.error("Server Error:", err);
+
+    res.status(500).json({
+
+        success: false,
+
+        message: "Internal Server Error",
+
+        error: err.message
+
+    });
+
+});
+
+/* ===========================
    START SERVER
 =========================== */
 
@@ -619,6 +494,9 @@ app.listen(PORT, () => {
     console.log("====================================");
     console.log("🚀 Telegram Expense Bot Started");
     console.log("🌐 Port :", PORT);
+    console.log("🤖 Bot  :", BOT_TOKEN ? "Connected" : "Missing BOT_TOKEN");
+    console.log("💬 Chat :", CHAT_ID ? CHAT_ID : "Missing CHAT_ID");
+    console.log("🗄 Database :", DATABASE_URL ? "Connected" : "Missing DATABASE_URL");
     console.log("📅 Date :", today());
     console.log("🕒 Time :", time());
     console.log("====================================");
